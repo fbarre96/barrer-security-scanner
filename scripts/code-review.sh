@@ -2,7 +2,8 @@
 # AI-Powered Code Security Review
 # Scans code for vulnerabilities
 
-MODEL="llama3.1:70b"
+MODEL="${OLLAMA_MODEL:-llama3.1:70b}"
+OLLAMA_HOST="${OLLAMA_HOST:-http://localhost:11434}"
 
 if [ -z "$1" ]; then
     echo "Usage: $0 <file_or_directory>"
@@ -30,7 +31,7 @@ for file in $FILES; do
     echo "## File: $file ($FILE_SIZE lines)" >> "$REPORT_FILE"
     echo "" >> "$REPORT_FILE"
     
-    ANALYSIS=$(curl -s http://localhost:11434/api/generate -d "{
+    ANALYSIS=$(curl -s "$OLLAMA_HOST/api/generate" -d "{
         \"model\": \"$MODEL\",
         \"prompt\": \"Perform a security code review of this file. Identify vulnerabilities like SQL injection, XSS, command injection, hardcoded secrets, insecure authentication, path traversal, and other security issues:\n\n$CONTENT\n\nProvide specific line numbers and fix recommendations.\",
         \"stream\": false,

@@ -2,9 +2,35 @@ const express = require('express');
 const router = express.Router();
 const { exec } = require('child_process');
 const util = require('util');
+const http = require('http');
+const https = require('https');
 const os = require('os');
 
 const execPromise = util.promisify(exec);
+
+const OLLAMA_HOST = (process.env.OLLAMA_HOST || 'http://localhost:11434').replace(/\/$/, '');
+
+// Helper: check Ollama reachability via HTTP
+function checkOllamaReachable() {
+  return new Promise((resolve) => {
+    const url = new URL(`${OLLAMA_HOST}/api/tags`);
+    const lib = url.protocol === 'https:' ? https : http;
+
+    const req = lib.request({
+      hostname: url.hostname,
+      port: url.port || (url.protocol === 'https:' ? 443 : 80),
+      path: url.pathname,
+      method: 'GET'
+    }, (res) => {
+      resolve({ reachable: res.statusCode < 500, statusCode: res.statusCode });
+      res.resume();
+    });
+
+    req.on('error', () => resolve({ reachable: false, statusCode: null }));
+    req.setTimeout(5000, () => { req.destroy(); resolve({ reachable: false, statusCode: null }); });
+    req.end();
+  });
+}
 
 // Get system information
 router.get('/info', async (req, res) => {
@@ -30,16 +56,17 @@ router.get('/info', async (req, res) => {
 // Get Ollama status
 router.get('/ollama/status', async (req, res) => {
   try {
-    const { stdout } = await execPromise('systemctl is-active ollama 2>/dev/null || echo "inactive"');
-    const status = stdout.trim();
-    
+    const { reachable, statusCode } = await checkOllamaReachable();
     res.json({
-      running: status === 'active',
-      status: status
+      running: reachable,
+      host: OLLAMA_HOST,
+      status: reachable ? 'reachable' : 'unreachable',
+      statusCode
     });
   } catch (error) {
     res.json({
       running: false,
+      host: OLLAMA_HOST,
       status: 'unknown',
       error: error.message
     });

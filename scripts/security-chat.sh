@@ -2,7 +2,8 @@
 # Interactive AI Security Assistant
 # Chat with the AI about security questions
 
-MODEL="llama3.1:70b"
+MODEL="${OLLAMA_MODEL:-llama3.1:70b}"
+OLLAMA_HOST="${OLLAMA_HOST:-http://localhost:11434}"
 
 echo "================================================"
 echo "   AI Security Assistant (Llama 3.1 70B)"
@@ -29,7 +30,7 @@ while true; do
     echo "AI Response:"
     echo "---"
     
-    curl -s http://localhost:11434/api/generate -d "{
+    curl -s "$OLLAMA_HOST/api/generate" -d "{
         \"model\": \"$MODEL\",
         \"prompt\": \"$SYSTEM_CONTEXT\n\nQuestion: $QUESTION\n\nAnswer:\",
         \"stream\": false,

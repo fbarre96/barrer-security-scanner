@@ -3,7 +3,8 @@
 
 #Requires -RunAsAdministrator
 
-$MODEL = "llama3.1:70b"
+$MODEL = if ($env:OLLAMA_MODEL) { $env:OLLAMA_MODEL } else { "llama3.1:70b" }
+$OLLAMA_HOST = if ($env:OLLAMA_HOST) { $env:OLLAMA_HOST.TrimEnd('/') } else { "http://localhost:11434" }
 $REPORT_DIR = "$env:USERPROFILE\Documents\SecurityReports"
 New-Item -ItemType Directory -Force -Path $REPORT_DIR | Out-Null
 
@@ -48,7 +49,7 @@ function Query-AI {
     } | ConvertTo-Json -Depth 10
     
     try {
-        $response = Invoke-RestMethod -Uri "http://localhost:11434/api/generate" -Method Post -Body $body -ContentType "application/json"
+        $response = Invoke-RestMethod -Uri "$OLLAMA_HOST/api/generate" -Method Post -Body $body -ContentType "application/json"
         $response.response | Out-File -FilePath $REPORT_FILE -Append -Encoding UTF8
     } catch {
         "Error: Unable to get AI response. Is Ollama running?" | Out-File -FilePath $REPORT_FILE -Append -Encoding UTF8

@@ -1,6 +1,7 @@
 # Interactive AI Security Assistant for Windows
 
-$MODEL = "llama3.1:70b"
+$MODEL = if ($env:OLLAMA_MODEL) { $env:OLLAMA_MODEL } else { "llama3.1:70b" }
+$OLLAMA_HOST = if ($env:OLLAMA_HOST) { $env:OLLAMA_HOST.TrimEnd('/') } else { "http://localhost:11434" }
 
 Write-Host "================================================" -ForegroundColor Cyan
 Write-Host "   AI Security Assistant (Llama 3.1 70B)" -ForegroundColor Cyan
@@ -38,7 +39,7 @@ while ($true) {
     } | ConvertTo-Json -Depth 10
     
     try {
-        $response = Invoke-RestMethod -Uri "http://localhost:11434/api/generate" -Method Post -Body $body -ContentType "application/json"
+        $response = Invoke-RestMethod -Uri "$OLLAMA_HOST/api/generate" -Method Post -Body $body -ContentType "application/json"
         Write-Host $response.response -ForegroundColor White
     } catch {
         Write-Host "Error: Unable to get AI response. Is Ollama running?" -ForegroundColor Red

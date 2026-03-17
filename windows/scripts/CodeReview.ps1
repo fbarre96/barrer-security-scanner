@@ -5,7 +5,8 @@ param(
     [string]$TargetPath
 )
 
-$MODEL = "llama3.1:70b"
+$MODEL = if ($env:OLLAMA_MODEL) { $env:OLLAMA_MODEL } else { "llama3.1:70b" }
+$OLLAMA_HOST = if ($env:OLLAMA_HOST) { $env:OLLAMA_HOST.TrimEnd('/') } else { "http://localhost:11434" }
 
 if (-not (Test-Path $TargetPath)) {
     Write-Host "Error: Path not found: $TargetPath" -ForegroundColor Red
@@ -75,7 +76,7 @@ Provide specific line numbers and fix recommendations.
     } | ConvertTo-Json -Depth 10
     
     try {
-        $response = Invoke-RestMethod -Uri "http://localhost:11434/api/generate" -Method Post -Body $body -ContentType "application/json"
+        $response = Invoke-RestMethod -Uri "$OLLAMA_HOST/api/generate" -Method Post -Body $body -ContentType "application/json"
         $response.response | Out-File -FilePath $REPORT_FILE -Append -Encoding UTF8
     } catch {
         "Error: Unable to analyze file. Is Ollama running?" | Out-File -FilePath $REPORT_FILE -Append -Encoding UTF8

@@ -18,6 +18,10 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
+# Ollama configuration (override via environment variables)
+OLLAMA_HOST="${OLLAMA_HOST:-http://localhost:11434}"
+OLLAMA_MODEL="${OLLAMA_MODEL:-llama3.1:8b}"
+
 # Check dependencies
 check_dependencies() {
     if ! command -v kubectl &> /dev/null; then
@@ -332,31 +336,27 @@ EOF
 
 # AI Analysis
 ai_analysis() {
-    if ! command -v ollama &>/dev/null; then
-        echo -e "${YELLOW}⚠️  Skipping AI analysis - Ollama not available${NC}"
+    if ! curl -sf "$OLLAMA_HOST/api/tags" -o /dev/null 2>&1; then
+        echo -e "${YELLOW}⚠️  Skipping AI analysis - Ollama not reachable at $OLLAMA_HOST${NC}"
         return
     fi
-    
+
     echo -e "${BLUE}🤖 Running AI security analysis...${NC}"
-    
+
     cat >> "$REPORT_FILE" << EOF
 ## AI Security Analysis
 
 EOF
-    
+
     local analysis_input=$(cat "$REPORT_FILE")
-    
-    local ai_response=$(ollama run llama3.1:8b "You are a Kubernetes security expert. Analyze this K8s security audit report and provide:
-1. Top 3 critical security issues
-2. Pod security best practices violations
-3. RBAC concerns
-4. Security score (1-10)
 
-Report:
-$analysis_input
+    local ai_response=$(curl -s "$OLLAMA_HOST/api/generate" -d "{
+        \"model\": \"$OLLAMA_MODEL\",
+        \"prompt\": \"You are a Kubernetes security expert. Analyze this K8s security audit report and provide:\\n1. Top 3 critical security issues\\n2. Pod security best practices violations\\n3. RBAC concerns\\n4. Security score (1-10)\\n\\nReport:\\n$analysis_input\\n\\nProvide a concise analysis.\",
+        \"stream\": false,
+        \"options\": {\"temperature\": 0.3}
+    }" | jq -r '.response' 2>/dev/null | head -100)
 
-Provide a concise analysis." 2>/dev/null | head -100)
-    
     echo "$ai_response" >> "$REPORT_FILE"
     echo "" >> "$REPORT_FILE"
 }

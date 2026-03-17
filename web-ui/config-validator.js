@@ -26,6 +26,7 @@ class ConfigValidator {
         this.validateRateLimits();
         this.validateOAuth();
         this.validateBackup();
+        this.validateOllama();
 
         this.printResults();
 
@@ -228,6 +229,29 @@ class ConfigValidator {
                 }
             }
         }
+    }
+
+    /**
+     * Validate Ollama AI configuration
+     */
+    validateOllama() {
+        const host = process.env.OLLAMA_HOST || 'http://localhost:11434';
+        const model = process.env.OLLAMA_MODEL || 'llama3.1:8b';
+
+        try {
+            const url = new URL(host);
+            if (!['http:', 'https:'].includes(url.protocol)) {
+                this.addError(`OLLAMA_HOST has unsupported protocol: ${url.protocol}`);
+            } else if (host === 'http://localhost:11434') {
+                this.addSuccess(`Ollama host: ${host} (local default)`);
+            } else {
+                this.addSuccess(`Ollama host configured: ${host}`);
+            }
+        } catch {
+            this.addError(`OLLAMA_HOST is not a valid URL: "${host}"`);
+        }
+
+        this.addSuccess(`Ollama model: ${model}`);
     }
 
     /**

@@ -4,7 +4,8 @@
 
 set -e
 
-MODEL="llama3.1:70b"
+MODEL="${OLLAMA_MODEL:-llama3.1:70b}"
+OLLAMA_HOST="${OLLAMA_HOST:-http://localhost:11434}"
 REPORT_DIR="/home/ubuntu/security-reports"
 mkdir -p "$REPORT_DIR"
 TIMESTAMP=$(date -u +%Y%m%d_%H%M%S)
@@ -29,7 +30,7 @@ query_ai() {
     echo "" >> "$REPORT_FILE"
     echo "Analyzing: $section..."
     
-    response=$(curl -s http://localhost:11434/api/generate -d "{
+    response=$(curl -s "$OLLAMA_HOST/api/generate" -d "{
         \"model\": \"$MODEL\",
         \"prompt\": \"$prompt\",
         \"stream\": false,
